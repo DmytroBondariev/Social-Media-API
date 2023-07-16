@@ -1,10 +1,7 @@
-import os
-import uuid
-
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.utils.text import slugify
+
 from django.utils.translation import gettext_lazy as _
 
 
@@ -42,18 +39,8 @@ class UserManager(BaseUserManager):
         return self._create_user(email, password, **extra_fields)
 
 
-def profile_pic_file_path(instance, filename):
-    _, extension = os.path.splitext(filename)
-    filename = f"{slugify(instance.email)}-{uuid.uuid4()}{extension}"
-
-    return os.path.join("uploads/users/", filename)
-
-
 class User(AbstractUser):
     username = None
-    profile_pic = models.ImageField(
-        upload_to=profile_pic_file_path, blank=True, null=True
-    )
     email = models.EmailField(_("email address"), unique=True)
     objects = UserManager()
 
