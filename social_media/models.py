@@ -14,7 +14,7 @@ def profile_pic_file_path(instance, filename):
 
 
 class Profile(models.Model):
-    username = models.CharField(max_length=50, unique=True)
+    username = models.CharField(max_length=50, unique=True, default="username")
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
     status = models.CharField(max_length=50, blank=True)
     followers = models.ManyToManyField(
