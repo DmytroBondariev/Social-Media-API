@@ -36,6 +36,9 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class ProfileListSerializer(ProfileSerializer):
+    followers = serializers.IntegerField(source="followers.count")
+    following = serializers.IntegerField(source="following.count")
+
     class Meta:
         model = Profile
         fields = (
@@ -49,6 +52,9 @@ class ProfileListSerializer(ProfileSerializer):
 
 
 class ProfileDetailSerializer(ProfileSerializer):
+    followers = serializers.SlugRelatedField(many=True, read_only=True, slug_field="username")
+    following = serializers.SlugRelatedField(many=True, read_only=True, slug_field="username")
+
     class Meta:
         model = Profile
         fields = (

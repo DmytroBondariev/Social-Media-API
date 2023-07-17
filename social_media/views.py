@@ -12,7 +12,7 @@ from .serializers import (
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
-    queryset = Profile.objects.all()
+    queryset = Profile.objects.all().select_related("user")
 
     def get_queryset(self):
         queryset = self.queryset
@@ -116,8 +116,13 @@ class ProfileViewSet(viewsets.ModelViewSet):
         profile = self.get_object()
         serializer = self.get_serializer(profile, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        if profile.user == request.user:
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "You are not authorized to update this profile."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
