@@ -38,14 +38,6 @@ class Profile(models.Model):
     def unfollow(self, profile):
         self.following.remove(profile)
 
-    @property
-    def get_followers(self):
-        return self.followers.all()
-
-    @property
-    def get_following(self):
-        return self.following.all()
-
 
 class Post(models.Model):
     author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="posts")

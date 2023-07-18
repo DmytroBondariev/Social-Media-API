@@ -7,7 +7,9 @@ from .serializers import (
     ProfileSerializer,
     ProfileDetailSerializer,
     ProfileImageSerializer,
-    ProfileListSerializer, PostSerializer,
+    ProfileListSerializer,
+    PostListSerializer,
+    PostDetailSerializer,
 )
 
 
@@ -130,7 +132,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
-    serializer_class = PostSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -147,6 +148,11 @@ class PostViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(title__icontains=title)
 
         return queryset.distinct()
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return PostDetailSerializer
+        return PostListSerializer
 
     def create(self, request, *args, **kwargs):
         if request.user.is_authenticated:

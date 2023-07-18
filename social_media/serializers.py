@@ -73,9 +73,10 @@ class ProfileImageSerializer(serializers.ModelSerializer):
         fields = ("profile_pic",)
 
 
-class PostSerializer(serializers.ModelSerializer):
+class PostListSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True, slug_field="username")
-    # likes = LikeSerializer(many=True, read_only=True)
+    comments = serializers.IntegerField(source="comments.count")
+    likes = serializers.IntegerField(source="likes.count")
 
     class Meta:
         model = Post
@@ -85,7 +86,26 @@ class PostSerializer(serializers.ModelSerializer):
             "content",
             "created_at",
             "image",
-            # "comments",
-            # "likes",
+            "comments",
+            "likes",
+        )
+        ordering = ("-created_at",)
+
+
+class PostDetailSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
+    comments = CommentSerializer(many=True, read_only=True)
+    likes = LikeSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Post
+        fields = (
+            "author",
+            "title",
+            "content",
+            "created_at",
+            "image",
+            "comments",
+            "likes",
         )
         ordering = ("-created_at",)
