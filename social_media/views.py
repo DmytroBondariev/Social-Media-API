@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -10,6 +10,7 @@ from .serializers import (
     ProfileListSerializer,
     PostListSerializer,
     PostDetailSerializer,
+    CommentSerializer,
 )
 
 
@@ -131,14 +132,14 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.all().prefetch_related("comments").select_related("author").order_by("-created_at")
 
     def get_queryset(self):
         user = self.request.user
         author = self.request.query_params.get("author", None)
         title = self.request.query_params.get("title", None)
 
-        queryset = self.queryset.select_related("author").filter(
+        queryset = self.queryset.filter(
             author__in=user.profile.following.all() | Profile.objects.filter(user=user)
         )
 
@@ -152,6 +153,8 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "retrieve":
             return PostDetailSerializer
+        if self.action == "comment":
+            return CommentSerializer
         return PostListSerializer
 
     def create(self, request, *args, **kwargs):
@@ -215,3 +218,20 @@ class PostViewSet(viewsets.ModelViewSet):
             {"detail": "You are not authorized to update this post."},
             status=status.HTTP_403_FORBIDDEN,
         )
+
+    @action(methods=["POST"], detail=True, permission_classes=[IsAuthenticated])
+    def comment(self, request, pk=None):
+        post = self.get_object()
+        user_profile = self.request.user.profile
+        serializer = CommentSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(author=user_profile, post=post, content=serializer.validated_data["content"])
+
+            return Response(
+                {"detail": "Comment added successfully."}, status=status.HTTP_200_OK
+            )
+        return Response(
+            serializer.errors, status=status.HTTP_400_BAD_REQUEST
+        )
+

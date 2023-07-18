@@ -4,7 +4,10 @@ from social_media.models import Comment, Like, Post, Profile
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    read_only_fields = ("author", "post", "created_at")
+
     class Meta:
+        read_only_fields = ("author", "post", "created_at")
         model = Comment
         fields = (
             "author",
@@ -12,6 +15,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "content",
             "created_at",
         )
+        ordering = ("-created_at",)
 
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -75,8 +79,8 @@ class ProfileImageSerializer(serializers.ModelSerializer):
 
 class PostListSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True, slug_field="username")
-    comments = serializers.IntegerField(source="comments.count")
-    likes = serializers.IntegerField(source="likes.count")
+    comments = serializers.IntegerField(source="comments.count", read_only=True)
+    likes = serializers.IntegerField(source="likes.count", read_only=True)
 
     class Meta:
         model = Post
@@ -89,7 +93,6 @@ class PostListSerializer(serializers.ModelSerializer):
             "comments",
             "likes",
         )
-        ordering = ("-created_at",)
 
 
 class PostDetailSerializer(serializers.ModelSerializer):
@@ -108,4 +111,3 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "comments",
             "likes",
         )
-        ordering = ("-created_at",)
