@@ -1,18 +1,18 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Profile
+from .models import Profile, Post
 from .serializers import (
     ProfileSerializer,
     ProfileDetailSerializer,
     ProfileImageSerializer,
-    ProfileListSerializer,
+    ProfileListSerializer, PostSerializer,
 )
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
-    queryset = Profile.objects.all().select_related("user")
+    queryset = Profile.objects.all().prefetch_related("followers", "following")
 
     def get_queryset(self):
         queryset = self.queryset
@@ -124,5 +124,88 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(
             {"detail": "You are not authorized to update this profile."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        author = self.request.query_params.get("author", None)
+        title = self.request.query_params.get("title", None)
+
+        queryset = self.queryset.select_related("author").filter(
+            author__in=user.profile.following.all() | Profile.objects.filter(user=user)
+        )
+
+        if author:
+            queryset = queryset.filter(author__username__icontains=author)
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+
+        return queryset.distinct()
+
+    def create(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(author=request.user.profile)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                {"detail": "You must be logged in to create a post."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+
+        if instance.author.user == request.user:
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial
+            )
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+        else:
+            return Response(
+                {"detail": "You are not authorized to update this post."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance.author.user == request.user:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(
+                {"detail": "You are not authorized to delete this post."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="upload-image",
+        permission_classes=[IsAuthenticated],
+    )
+    def upload_image(self, request, pk=None):
+        post = self.get_object()
+        serializer = self.get_serializer(post, data=request.data)
+
+        if post.author.user == request.user:
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "You are not authorized to update this post."},
             status=status.HTTP_403_FORBIDDEN,
         )
