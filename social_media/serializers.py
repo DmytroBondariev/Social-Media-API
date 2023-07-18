@@ -74,15 +74,18 @@ class ProfileImageSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    # comments = CommentSerializer(many=True, read_only=True)
+    author = serializers.SlugRelatedField(read_only=True, slug_field="username")
     # likes = LikeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
         fields = (
             "author",
+            "title",
             "content",
             "created_at",
-            "comments",
-            "likes",
+            "image",
+            # "comments",
+            # "likes",
         )
+        ordering = ("-created_at",)

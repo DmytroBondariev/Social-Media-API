@@ -13,6 +13,13 @@ def profile_pic_file_path(instance, filename):
     return os.path.join("uploads/profile_pics/", filename)
 
 
+def post_pic_file_path(instance, filename):
+    _, extension = os.path.splitext(filename)
+    filename = f"{slugify(instance.created_at)}-{uuid.uuid4()}{extension}"
+
+    return os.path.join("uploads/posts/", filename)
+
+
 class Profile(models.Model):
     username = models.CharField(max_length=50, unique=True, default="username")
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
@@ -42,8 +49,10 @@ class Profile(models.Model):
 
 class Post(models.Model):
     author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="posts")
+    title = models.CharField(max_length=50, default="Title")
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    image = models.ImageField(upload_to=post_pic_file_path, blank=True, null=True)
 
 
 class Like(models.Model):
