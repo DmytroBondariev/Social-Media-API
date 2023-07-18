@@ -235,3 +235,26 @@ class PostViewSet(viewsets.ModelViewSet):
             serializer.errors, status=status.HTTP_400_BAD_REQUEST
         )
 
+    @action(methods=["POST"], detail=True, permission_classes=[IsAuthenticated])
+    def like_unlike(self, request, pk=None):
+        post = self.get_object()
+        user_profile = self.request.user.profile
+
+        if user_profile not in post.likes.all():
+            post.likes.add(user_profile)
+            return Response(
+                {"detail": "Post liked successfully."}, status=status.HTTP_200_OK
+            )
+
+        post.likes.remove(user_profile)
+        return Response(
+            {"detail": "Your like was removed."},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(methods=["GET"], detail=False, permission_classes=[IsAuthenticated])
+    def liked_posts(self, request):
+        user_profile = self.request.user.profile
+        queryset = Post.objects.filter(likes=user_profile)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from social_media.models import Comment, Like, Post, Profile
+from social_media.models import Comment, Post, Profile
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -16,16 +16,6 @@ class CommentSerializer(serializers.ModelSerializer):
             "created_at",
         )
         ordering = ("-created_at",)
-
-
-class LikeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Like
-        fields = (
-            "author",
-            "post",
-            "created_at",
-        )
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -98,7 +88,7 @@ class PostListSerializer(serializers.ModelSerializer):
 class PostDetailSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True, slug_field="username")
     comments = CommentSerializer(many=True, read_only=True)
-    likes = LikeSerializer(many=True, read_only=True)
+    likes = serializers.IntegerField(source="likes.count", read_only=True)
 
     class Meta:
         model = Post

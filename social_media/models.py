@@ -45,12 +45,7 @@ class Post(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to=post_pic_file_path, blank=True, null=True)
-
-
-class Like(models.Model):
-    author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="likes")
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
-    created_at = models.DateTimeField(auto_now_add=True)
+    likes = models.ManyToManyField(Profile, related_name="posts_liked", blank=True)
 
 
 class Comment(models.Model):
