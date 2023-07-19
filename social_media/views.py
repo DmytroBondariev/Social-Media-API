@@ -1,5 +1,4 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Profile, Post
@@ -12,6 +11,7 @@ from .serializers import (
     PostDetailSerializer,
     CommentSerializer,
 )
+from rest_framework.decorators import action
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
@@ -86,7 +86,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
         if user_profile != profile and profile not in user_profile.following.all():
             user_profile.follow(profile)
             return Response(
-                {"detail": "Profile followed successfully."}, status=status.HTTP_200_OK
+                {"detail": "Profile followed successfully."},
+                status=status.HTTP_200_OK
             )
         return Response(
             {"detail": "Unable to follow the profile."},
@@ -172,7 +173,6 @@ class PostViewSet(viewsets.ModelViewSet):
             if scheduled_time:
                 from .tasks import create_scheduled_post
 
-                # Schedule the post using Celery
                 create_scheduled_post.apply_async(
                     args=[
                         serializer.validated_data["title"],
@@ -180,7 +180,7 @@ class PostViewSet(viewsets.ModelViewSet):
                         request.user.profile.id,
                         scheduled_time,
                     ],
-                    eta=scheduled_time,  # The scheduled time to create the post
+                    eta=scheduled_time,
                 )
 
                 return Response(

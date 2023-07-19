@@ -40,7 +40,11 @@ class Profile(models.Model):
 
 
 class Post(models.Model):
-    author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="posts")
+    author = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="posts"
+    )
     title = models.CharField(max_length=50, default="Title")
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
