@@ -46,8 +46,12 @@ class ProfileListSerializer(ProfileSerializer):
 
 
 class ProfileDetailSerializer(ProfileSerializer):
-    followers = serializers.SlugRelatedField(many=True, read_only=True, slug_field="username")
-    following = serializers.SlugRelatedField(many=True, read_only=True, slug_field="username")
+    followers = serializers.SlugRelatedField(
+        many=True, read_only=True, slug_field="username"
+    )
+    following = serializers.SlugRelatedField(
+        many=True, read_only=True, slug_field="username"
+    )
 
     class Meta:
         model = Profile
@@ -71,6 +75,7 @@ class PostListSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True, slug_field="username")
     comments = serializers.IntegerField(source="comments.count", read_only=True)
     likes = serializers.IntegerField(source="likes.count", read_only=True)
+    write_only_fields = ("scheduled_time",)
 
     class Meta:
         model = Post
@@ -82,6 +87,7 @@ class PostListSerializer(serializers.ModelSerializer):
             "image",
             "comments",
             "likes",
+            "scheduled_time",
         )
 
 
@@ -89,6 +95,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(read_only=True, slug_field="username")
     comments = CommentSerializer(many=True, read_only=True)
     likes = serializers.IntegerField(source="likes.count", read_only=True)
+    write_only_fields = ("scheduled_time",)
 
     class Meta:
         model = Post
@@ -100,4 +107,5 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "image",
             "comments",
             "likes",
+            "scheduled_time",
         )

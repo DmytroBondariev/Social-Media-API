@@ -132,7 +132,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all().prefetch_related("comments").select_related("author").order_by("-created_at")
+    queryset = (
+        Post.objects.all()
+        .prefetch_related("comments")
+        .select_related("author")
+        .order_by("-created_at")
+    )
 
     def get_queryset(self):
         user = self.request.user
@@ -161,8 +166,30 @@ class PostViewSet(viewsets.ModelViewSet):
         if request.user.is_authenticated:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save(author=request.user.profile)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+            scheduled_time = serializer.validated_data.get("scheduled_time")
+
+            if scheduled_time:
+                from .tasks import create_scheduled_post
+
+                # Schedule the post using Celery
+                create_scheduled_post.apply_async(
+                    args=[
+                        serializer.validated_data["title"],
+                        serializer.validated_data["content"],
+                        request.user.profile.id,
+                        scheduled_time,
+                    ],
+                    eta=scheduled_time,  # The scheduled time to create the post
+                )
+
+                return Response(
+                    {"detail": "Post scheduled for creation."},
+                    status=status.HTTP_201_CREATED,
+                )
+            else:
+                serializer.save(author=request.user.profile)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(
                 {"detail": "You must be logged in to create a post."},
@@ -226,14 +253,16 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer = CommentSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(author=user_profile, post=post, content=serializer.validated_data["content"])
+            serializer.save(
+                author=user_profile,
+                post=post,
+                content=serializer.validated_data["content"],
+            )
 
             return Response(
                 {"detail": "Comment added successfully."}, status=status.HTTP_200_OK
             )
-        return Response(
-            serializer.errors, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["POST"], detail=True, permission_classes=[IsAuthenticated])
     def like_unlike(self, request, pk=None):

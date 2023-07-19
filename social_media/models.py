@@ -46,6 +46,7 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to=post_pic_file_path, blank=True, null=True)
     likes = models.ManyToManyField(Profile, related_name="posts_liked", blank=True)
+    scheduled_time = models.DateTimeField(null=True, blank=True)
 
 
 class Comment(models.Model):
