@@ -4,12 +4,12 @@ from .models import Post
 
 
 @shared_task
-def create_scheduled_post(title, content, author_id, scheduled_time, image=None):
+def create_scheduled_post(title, content, author, scheduled_time, image=None):
     scheduled_time = timezone.make_aware(scheduled_time)
     post = Post.objects.create(
         title=title,
         content=content,
-        author_id=author_id,
+        author=author,
         created_at=scheduled_time,
         image=image
     )

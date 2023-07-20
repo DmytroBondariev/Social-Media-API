@@ -28,6 +28,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             "bio",
         )
 
+    def validate(self, data):
+        user = self.context["request"].user
+        data["user"] = user
+        return data
+
 
 class ProfileListSerializer(ProfileSerializer):
     followers = serializers.IntegerField(source="followers.count")
@@ -69,6 +74,46 @@ class ProfileImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ("profile_pic",)
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = (
+            "title",
+            "content",
+            "author",
+            "scheduled_time",
+            "image",
+        )
+        read_only_fields = ("author",)
+
+    def validate(self, data):
+        user_profile = self.context["request"].user.profile
+        data["author"] = user_profile
+        return data
+
+    def create(self, validated_data):
+        scheduled_time = validated_data.get("scheduled_time")
+
+        if scheduled_time:
+            from .tasks import create_scheduled_post
+
+            create_scheduled_post.apply_async(
+                args=[
+                    validated_data["title"],
+                    validated_data["content"],
+                    validated_data["author"],
+                    scheduled_time,
+                    validated_data["image"],
+                ],
+                eta=scheduled_time,
+            )
+
+            return validated_data
+
+        post = Post.objects.create(**validated_data)
+        return post
 
 
 class PostListSerializer(serializers.ModelSerializer):
