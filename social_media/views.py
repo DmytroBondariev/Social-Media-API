@@ -10,11 +10,13 @@ from .serializers import (
     PostListSerializer,
     PostDetailSerializer,
     CommentSerializer,
+    PostImageSerializer,
 )
 from rest_framework.decorators import action
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
     queryset = Profile.objects.all().prefetch_related("followers", "following")
 
     def get_queryset(self):
@@ -86,8 +88,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         if user_profile != profile and profile not in user_profile.following.all():
             user_profile.follow(profile)
             return Response(
-                {"detail": "Profile followed successfully."},
-                status=status.HTTP_200_OK
+                {"detail": "Profile followed successfully."}, status=status.HTTP_200_OK
             )
         return Response(
             {"detail": "Unable to follow the profile."},
@@ -133,6 +134,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 
 class PostViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = (
         Post.objects.all()
         .prefetch_related("comments")
@@ -161,6 +163,8 @@ class PostViewSet(viewsets.ModelViewSet):
             return PostDetailSerializer
         if self.action == "comment":
             return CommentSerializer
+        if self.action == "upload_image":
+            return PostImageSerializer
         return PostListSerializer
 
     def create(self, request, *args, **kwargs):

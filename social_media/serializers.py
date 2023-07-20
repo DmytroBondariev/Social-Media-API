@@ -109,3 +109,9 @@ class PostDetailSerializer(serializers.ModelSerializer):
             "likes",
             "scheduled_time",
         )
+
+
+class PostImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("image",)
